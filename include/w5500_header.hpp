@@ -1317,8 +1317,8 @@ private:
 
 };
 
-extern uint32_t str_to_ip(const char* str);
+extern uint32_t strToIp(const char* str);
 extern void printfBytes(char* str, uint8_t* buf, int len);
 extern void printHex(uint8_t* buf, int len);
-extern void debug_hex(uint8_t* buf, int len);
+extern void debugHex(uint8_t* buf, int len);
 #endif // W5500_HPP
