@@ -31,7 +31,7 @@ TCPSocketConnection::TCPSocketConnection() :
 int TCPSocketConnection::connect(const char* host, const int port)
 {
     if (_sock_fd < 0) {
-        _sock_fd = eth->new_socket();
+        _sock_fd = eth->newSocket();
         if (_sock_fd < 0) {
             return -1;
         }
@@ -52,7 +52,7 @@ int TCPSocketConnection::connect(const char* host, const int port)
 bool TCPSocketConnection::is_connected(void)
 {
     // force update recent state.
-    _is_connected = eth->is_connected(_sock_fd);
+    _is_connected = eth->isConnected(_sock_fd);
     return _is_connected;
 }
 
@@ -62,7 +62,7 @@ int TCPSocketConnection::send(char* data, int length)
     if ((_sock_fd < 0) || !_is_connected)
         return -1;
 
-    int size = eth->wait_writeable(_sock_fd, _blocking ? -1 : _timeout);
+    int size = eth->waitWriteable(_sock_fd, _blocking ? -1 : _timeout);
     if (size < 0) {
         return -1;
     }
@@ -77,7 +77,7 @@ int TCPSocketConnection::send_all(char* data, int length)
 {
     int writtenLen = 0;
     while (writtenLen < length) {
-        int size = eth->wait_writeable(_sock_fd, _blocking ? -1 : _timeout);
+        int size = eth->waitWriteable(_sock_fd, _blocking ? -1 : _timeout);
         if (size < 0) {
             return -1;
         }
@@ -100,7 +100,7 @@ int TCPSocketConnection::receive(char* data, int length)
     if ((_sock_fd < 0) || !_is_connected)
         return -1;
 
-    int size = eth->wait_readable(_sock_fd, _blocking ? -1 : _timeout);
+    int size = eth->waitReadable(_sock_fd, _blocking ? -1 : _timeout);
     if (size < 0) {
         return -1;
     }
@@ -115,7 +115,7 @@ int TCPSocketConnection::receive_all(char* data, int length)
 {
     int readLen = 0;
     while (readLen < length) {
-        int size = eth->wait_readable(_sock_fd, _blocking ? -1 :_timeout);
+        int size = eth->waitReadable(_sock_fd, _blocking ? -1 :_timeout);
         if (size <= 0) {
             break;
         }

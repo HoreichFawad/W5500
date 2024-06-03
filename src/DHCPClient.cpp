@@ -157,7 +157,7 @@ void  DHCPClient::add_option(uint8_t code, uint8_t* buf, int len)
 
 int DHCPClient::setup(int timeout_ms)
 {
-    eth = WIZnet_Chip::getInstance();
+    eth = W5500::getInstance();
     if (eth == NULL) {
         return -1;
     }    

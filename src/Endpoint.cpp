@@ -15,45 +15,47 @@
  * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#ifndef SOCKET_H_
-#define SOCKET_H_
+#include "Socket.h"
+#include "Endpoint.h"
+//#include <cstring>
+//#include <cstdio>
 
-#include "w5500_header.hpp"
-
-#define htons(x) __REV16(x)
-#define ntohs(x) __REV16(x)
-#define htonl(x) __REV(x)
-#define ntohl(x) __REV(x)
-
-/** Socket file descriptor and select wrapper
-  */
-class Socket_
+Endpoint::Endpoint()
 {
-public: 
-    /** Socket
-     */
-    Socket_();
+    reset_address();
+}
+Endpoint::~Endpoint() {}
 
-    /** Set blocking or non-blocking mode of the socket and a timeout on
-        blocking socket operations
-    \param blocking  true for blocking mode, false for non-blocking mode.
-    \param timeout   timeout in ms [Default: (1500)ms].
-    */
-    void set_blocking(bool blocking, unsigned int timeout=1500);
+void Endpoint::reset_address(void)
+{
+    _ipAddress[0] = '\0';
+    _port = 0;
+}
 
-    /** Close the socket file descriptor
-     */
-    int close();
-    
-   
-    ~Socket_();
+int Endpoint::set_address(const char* host, const int port)
+{
+    //Resolve DNS address or populate hard-coded IP address
+    // added code for searching instance of WIZnet chip. refer from Wifly Library.
+    W5500* eth = W5500::getInstance();
+    if (eth == NULL) {
+        error("Endpoint constructor error: no WIZnet chip instance available!\r\n");
+        return -1;
+    }
+    uint32_t addr;
+    if (!eth->getHostByName(host, &addr)) {
+        return -1;
+    }
+    snprintf(_ipAddress, sizeof(_ipAddress), "%d.%d.%d.%d", (addr>>24)&0xff, (addr>>16)&0xff, (addr>>8)&0xff, addr&0xff);
+    _port = port;
+    return 0;
+}
 
-protected:
-    int _sock_fd;
-    bool _blocking;
-    int _timeout;
-    WIZnet_Chip* eth;
-};
+char* Endpoint::get_address()
+{
+    return _ipAddress;
+}
 
-
-#endif /* SOCKET_H_ */
+int   Endpoint::get_port()
+{
+    return _port;
+}

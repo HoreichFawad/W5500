@@ -27,9 +27,9 @@ UDPSocket_::UDPSocket_()
 int UDPSocket_::init(void)
 {
     if (_sock_fd < 0) {
-        _sock_fd = eth->new_socket();
+        _sock_fd = eth->newSocket();
     }
-    if (eth->setProtocol(_sock_fd, WIZnet_Chip::UDP) == false) return -1;
+    if (eth->setProtocol(_sock_fd, W5500::UDP) == false) return -1;
     return 0;
 }
 
@@ -37,7 +37,7 @@ int UDPSocket_::init(void)
 int UDPSocket_::bind(int port)
 {
     if (_sock_fd < 0) {
-        _sock_fd = eth->new_socket();
+        _sock_fd = eth->newSocket();
         if (_sock_fd < 0) {
             return -1;
         }
@@ -50,15 +50,15 @@ int UDPSocket_::bind(int port)
         eth->sreg<uint16_t>(_sock_fd, Sn_PORT, udp_local_port);
     }
     // set udp protocol
-    eth->setProtocol(_sock_fd, WIZnet_Chip::UDP);
-    eth->scmd(_sock_fd, WIZnet_Chip::OPEN);
+    eth->setProtocol(_sock_fd, W5500::UDP);
+    eth->scmd(_sock_fd, W5500::OPEN);
     return 0;
 }
 
 // -1 if unsuccessful, else number of bytes written
 int UDPSocket_::sendTo(Endpoint &remote, char *packet, int length)
 {
-    int size = eth->wait_writeable(_sock_fd, _blocking ? -1 : _timeout, length-1);
+    int size = eth->waitWriteable(_sock_fd, _blocking ? -1 : _timeout, length-1);
     if (size < 0) {
         return -1;
     }
@@ -71,7 +71,7 @@ int UDPSocket_::sendTo(Endpoint &remote, char *packet, int length)
 int UDPSocket_::receiveFrom(Endpoint &remote, char *buffer, int length)
 {
     uint8_t info[8];
-    int size = eth->wait_readable(_sock_fd, _blocking ? -1 : _timeout, sizeof(info));
+    int size = eth->waitReadable(_sock_fd, _blocking ? -1 : _timeout, sizeof(info));
     if (size < 0) {
         return -1;
     }

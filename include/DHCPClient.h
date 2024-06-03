@@ -49,6 +49,6 @@ private:
     int m_retry;
     uint8_t m_buf[DHCP_MAX_PACKET_SIZE];
     int m_pos;
-    WIZnet_Chip* eth;
+    W5500* eth;
 };
 #endif //DHCPCLIENT_H

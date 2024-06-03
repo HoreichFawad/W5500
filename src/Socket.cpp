@@ -15,47 +15,34 @@
  * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "Socket/Socket.h"
-#include "Socket/Endpoint.h"
-//#include <cstring>
-//#include <cstdio>
 
-Endpoint::Endpoint()
-{
-    reset_address();
-}
-Endpoint::~Endpoint() {}
+#include "Socket.h"
 
-void Endpoint::reset_address(void)
+Socket_::Socket_() : _sock_fd(-1),_blocking(true), _timeout(1500)
 {
-    _ipAddress[0] = '\0';
-    _port = 0;
-}
-
-int Endpoint::set_address(const char* host, const int port)
-{
-    //Resolve DNS address or populate hard-coded IP address
-    // added code for searching instance of WIZnet chip. refer from Wifly Library.
-    WIZnet_Chip* eth = WIZnet_Chip::getInstance();
+    eth = W5500::getInstance();
     if (eth == NULL) {
-        error("Endpoint constructor error: no WIZnet chip instance available!\r\n");
-        return -1;
+        error("Socket constructor error: no W5500 instance available!\r\n");
     }
-    uint32_t addr;
-    if (!eth->gethostbyname(host, &addr)) {
-        return -1;
-    }
-    snprintf(_ipAddress, sizeof(_ipAddress), "%d.%d.%d.%d", (addr>>24)&0xff, (addr>>16)&0xff, (addr>>8)&0xff, addr&0xff);
-    _port = port;
-    return 0;
 }
 
-char* Endpoint::get_address()
+void Socket_::set_blocking(bool blocking, unsigned int timeout)
 {
-    return _ipAddress;
+    _blocking = blocking;
+    _timeout = timeout;
 }
 
-int   Endpoint::get_port()
+int Socket_::close()
 {
-    return _port;
+    // add this code refer from EthernetInterface.
+    // update by Patrick Pollet
+    int res;
+    res = eth->close(_sock_fd);
+    _sock_fd = -1;
+    return (res)? 0: -1;
+}
+
+Socket_::~Socket_()
+{
+    close(); //Don't want to leak
 }

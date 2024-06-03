@@ -16,15 +16,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef TCPSOCKET_H
-#define TCPSOCKET_H
+#pragma once
 
-#include "Socket/Socket.h"
-#include "Socket/Endpoint.h"
+#include "Socket.h"
+#include "Endpoint.h"
 /**
 TCP socket connection
 */
-class TCPSocketConnection: public Socket, public Endpoint
+class TCPSocketConnection: public Socket_ , public Endpoint
 {
     friend class TCPSocketServer;
 
@@ -76,5 +75,3 @@ public:
 private:
     bool _is_connected;
 };
-
-#endif

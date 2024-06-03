@@ -1,0 +1,16 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../../../../Downloads/W5500Interface-afec30f0922a/W5500Interface-afec30f0922a"
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"cstddef": "cpp",
+			"*.tcc": "cpp"
+		}
+	}
+}

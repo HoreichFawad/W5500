@@ -25,17 +25,17 @@ int TCPSocketServer::bind(int port)
 {
     listen_port = port;
     if (_sock_fd < 0) {
-        _sock_fd = eth->new_socket();
+        _sock_fd = eth->newSocket();
         if (_sock_fd < 0) {
             return -1;
         }
     }
     // set TCP protocol
-    eth->setProtocol(_sock_fd, WIZnet_Chip::TCP);
+    eth->setProtocol(_sock_fd, W5500::TCP);
     // set local port
     eth->sreg<uint16_t>(_sock_fd, Sn_PORT, port);
     // connect the network
-    eth->scmd(_sock_fd, WIZnet_Chip::OPEN);
+    eth->scmd(_sock_fd, W5500::OPEN);
     return 0;
 }
 
@@ -47,7 +47,7 @@ int TCPSocketServer::listen(int backlog)
     if (backlog != 1) {
         return -1;
     }
-    eth->scmd(_sock_fd, WIZnet_Chip::LISTEN);
+    eth->scmd(_sock_fd, W5500::LISTEN);
     return 0;
 }
 
@@ -64,7 +64,7 @@ int TCPSocketServer::accept(TCPSocketConnection& connection)
         if (t.read_ms() > _timeout && _blocking == false) {
             return -1;
         }
-        if (eth->sreg<uint8_t>(_sock_fd, Sn_SR) == WIZnet_Chip::SOCK_ESTABLISHED) {
+        if (eth->sreg<uint8_t>(_sock_fd, Sn_SR) == W5500::SOCK_ESTABLISHED) {
             break;
         }
     }

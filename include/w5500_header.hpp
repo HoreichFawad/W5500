@@ -172,7 +172,8 @@
 #define MBED_CONF_W5500_RST_PIN PA_10
 #define MBED_CONF_W5500_FREQUENCY 1000000
 #define MBED_CONF_W5500_DEBUG    1
-class WIZnet_Chip
+
+class W5500
 {
 public:
 enum Protocol {
@@ -213,18 +214,12 @@ enum Status {
 };
 
 uint16_t sock_any_port;
-    WIZnet_Chip(
-        PinName cs = MBED_CONF_W5500_CS_PIN,
-        PinName sclk = MBED_CONF_W5500_CLK_PIN,
-        PinName miso = MBED_CONF_W5500_MISO_PIN,
-        PinName mosi = MBED_CONF_W5500_MOSI_PIN,
-        PinName reset_pin = MBED_CONF_W5500_RST_PIN,
-        uint32_t frequency = MBED_CONF_W5500_FREQUENCY
-    );
 
-    ~WIZnet_Chip() = default;
-    void disable();
-    void enable();
+W5500(PinName mosi, PinName miso, PinName sclk, PinName cs, PinName reset);
+W5500(SPI* spi, PinName cs, PinName reset);
+
+    ~W5500() = default;
+    // void enable();
     // uint8_t read_register(uint16_t reg);
     // void write_register(char reg, char data);
     void spiWrite(uint16_t addr, uint8_t cb, const uint8_t *buf, uint16_t len);
@@ -338,7 +333,7 @@ uint16_t sock_any_port;
 
     bool getHostByName(const char* host, uint32_t* ip);
 
-    static WIZnet_Chip * getInstance() {
+    static W5500* getInstance() {
         return inst;
     };
     int newSocket();
@@ -389,7 +384,7 @@ uint16_t sock_any_port;
         return *reinterpret_cast<T*>(buf);
     }
 
-void reg_rd_mac(uint16_t addr, uint8_t* data) {
+    void reg_rd_mac(uint16_t addr, uint8_t* data) {
         spiRead(addr, 0x00, data, 6);
     }
 
@@ -1287,9 +1282,7 @@ protected:
     uint32_t dnsaddr;
     bool dhcp;
     
-    
-
-    static WIZnet_Chip* inst;
+    static W5500* inst;
 
     void reg_wr_mac(uint16_t addr, uint8_t* data) {
         spiWrite(addr, 0x04, data, 6);
@@ -1297,23 +1290,25 @@ protected:
 
     // void spi_write(uint16_t addr, uint8_t cb, const uint8_t *buf, uint16_t len);
     // void spi_read(uint16_t addr, uint8_t cb, uint8_t *buf, uint16_t len);
+    SPI* spi;
+    DigitalOut cs;
+    DigitalOut reset_pin;
 
-
-private:
-    PinName _cs_pin;
-    PinName _sclk_pin;
-    PinName _miso_pin;
-    PinName _mosi_pin;
-    PinName _reset_pin;
-    std::unique_ptr<mbed::SPI> _spi; 
-    std::unique_ptr<mbed::DigitalInOut> _cs;
-    std::unique_ptr<mbed::DigitalInOut> _miso;
-    std::unique_ptr<mbed::DigitalInOut> _mosi;
-    std::unique_ptr<mbed::DigitalInOut> _sclk;
-    std::unique_ptr<mbed::InterruptIn> _isr;                    // <ready interrupt pin>
-    std::unique_ptr<mbed::DigitalInOut> _isr_idle;                                       // <the nominal resistance of the RTD>
-    std::unique_ptr<mbed::DigitalInOut> _reset;    
-    uint32_t _frequency;
+// private:
+//     PinName _cs_pin;
+//     PinName _sclk_pin;
+//     PinName _miso_pin;
+//     PinName _mosi_pin;
+//     PinName _reset_pin;
+//     std::unique_ptr<mbed::SPI> _spi; 
+//     std::unique_ptr<mbed::DigitalInOut> _cs;
+//     std::unique_ptr<mbed::DigitalInOut> _miso;
+//     std::unique_ptr<mbed::DigitalInOut> _mosi;
+//     std::unique_ptr<mbed::DigitalInOut> _sclk;
+//     std::unique_ptr<mbed::InterruptIn> _isr;                    // <ready interrupt pin>
+//     std::unique_ptr<mbed::DigitalInOut> _isr_idle;                                       // <the nominal resistance of the RTD>
+//     std::unique_ptr<mbed::DigitalInOut> _reset;    
+//     uint32_t _frequency;
 
 };
 

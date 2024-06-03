@@ -18,12 +18,12 @@
 #ifndef TCPSOCKETSERVER_H
 #define TCPSOCKETSERVER_H
 
-#include "Socket/Socket.h"
+#include "Socket.h"
 #include "TCPSocketConnection.h"
 
 /** TCP Server.
   */
-class TCPSocketServer : public Socket
+class TCPSocketServer : public Socket_
 {
 public:
     /** Instantiate a TCP Server.

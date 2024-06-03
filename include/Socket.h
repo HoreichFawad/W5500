@@ -15,34 +15,45 @@
  * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#ifndef SOCKET_H_
+#define SOCKET_H_
 
-#include "Socket.h"
+#include "w5500_header.hpp"
 
-Socket_::Socket_() : _sock_fd(-1),_blocking(true), _timeout(1500)
+#define htons(x) __REV16(x)
+#define ntohs(x) __REV16(x)
+#define htonl(x) __REV(x)
+#define ntohl(x) __REV(x)
+
+/** Socket file descriptor and select wrapper
+  */
+class Socket_
 {
-    eth = WIZnet_Chip::getInstance();
-    if (eth == NULL) {
-        error("Socket constructor error: no W5500 instance available!\r\n");
-    }
-}
+public: 
+    /** Socket
+     */
+    Socket_();
 
-void Socket_::set_blocking(bool blocking, unsigned int timeout)
-{
-    _blocking = blocking;
-    _timeout = timeout;
-}
+    /** Set blocking or non-blocking mode of the socket and a timeout on
+        blocking socket operations
+    \param blocking  true for blocking mode, false for non-blocking mode.
+    \param timeout   timeout in ms [Default: (1500)ms].
+    */
+    void set_blocking(bool blocking, unsigned int timeout=1500);
 
-int Socket_::close()
-{
-    // add this code refer from EthernetInterface.
-    // update by Patrick Pollet
-    int res;
-    res = eth->close(_sock_fd);
-    _sock_fd = -1;
-    return (res)? 0: -1;
-}
+    /** Close the socket file descriptor
+     */
+    int close();
+    
+   
+    ~Socket_();
 
-Socket_::~Socket_()
-{
-    close(); //Don't want to leak
-}
+protected:
+    int _sock_fd;
+    bool _blocking;
+    int _timeout;
+    W5500* eth;
+};
+
+
+#endif /* SOCKET_H_ */
