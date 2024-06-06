@@ -68,45 +68,6 @@ W5500::W5500(SPI* spi, PinName _cs, PinName _reset):
     inst = this;
     sock_any_port = SOCK_ANY_PORT_NUM;
 }
-// W5500::W5500(
-//     PinName cs,
-//     PinName sclk,
-//     PinName miso,
-//     PinName mosi,
-//     PinName reset_pin,
-//     uint32_t frequency
-
-//     ) : _cs_pin(cs),
-//         _sclk_pin(sclk),
-//         _miso_pin(miso),
-//         _mosi_pin(mosi),
-//         _reset_pin(reset_pin),
-//         _spi(nullptr),
-//         _cs(nullptr),
-//         _miso(nullptr),
-//         _mosi(nullptr),
-//         _sclk(nullptr),
-//         _isr(nullptr),
-//         _isr_idle(nullptr),
-//         _frequency(frequency)
-// {
-//     inst = this;
-//     sock_any_port = SOCK_ANY_PORT_NUM;
-// }
-
-// void W5500::enable()
-// {
-//     if (!_spi)
-//     {
-//         _sclk.reset();
-//         _mosi.reset();
-//         _miso.reset();
-//         _spi = std::make_unique<mbed::SPI>(_mosi_pin, _miso_pin, _sclk_pin);
-//         _spi->frequency(_frequency);
-//         _spi->format(8, 0); // or _spi.format(8, 3)
-//         _cs = std::make_unique<mbed::DigitalInOut>(_cs_pin, PIN_INPUT, PinMode::PullUp, 0);
-//     }
-// }
 
 /*********************************************************************************
  * PRIVATE MEMBERS
@@ -353,6 +314,17 @@ bool W5500::close(int socket)
     scmd(socket, CLOSE);
     sreg<uint8_t>(socket, Sn_IR, 0xff);
     return true;
+}
+
+bool W5500::is_connected(int socket)
+{
+    uint8_t tmpSn_SR;
+    tmpSn_SR = sreg<uint8_t>(socket, Sn_SR);
+    // packet sending is possible, when state is SOCK_CLOSE_WAIT.
+    if ((tmpSn_SR == SOCK_ESTABLISHED) || (tmpSn_SR == SOCK_CLOSE_WAIT)) {
+        return true;
+    }
+    return false;
 }
 
 int W5500::waitReadable(int socket, int wait_time_ms, int req_size)

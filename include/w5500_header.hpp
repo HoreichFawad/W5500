@@ -165,14 +165,6 @@
 #define PHY_POWER_DOWN           1     ///< PHY power down mode 
 
 
-#define MBED_CONF_W5500_CS_PIN PB_12
-#define MBED_CONF_W5500_CLK_PIN PB_13
-#define MBED_CONF_W5500_MISO_PIN PB_14
-#define MBED_CONF_W5500_MOSI_PIN PB_15
-#define MBED_CONF_W5500_RST_PIN PA_10
-#define MBED_CONF_W5500_FREQUENCY 1000000
-#define MBED_CONF_W5500_DEBUG    1
-
 class W5500
 {
 public:

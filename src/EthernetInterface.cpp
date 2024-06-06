@@ -9,11 +9,11 @@ EthernetInterface::EthernetInterface(PinName mosi, PinName miso, PinName sclk, P
     ip_set = false;
 }
 
-// EthernetInterface::EthernetInterface(SPI* spi, PinName cs, PinName reset) :
-//         W5500(spi, cs, reset)
-// {
-//     ip_set = false;
-// }
+EthernetInterface::EthernetInterface(SPI* spi, PinName cs, PinName reset) :
+        W5500(spi, cs, reset)
+{
+    ip_set = false;
+}
 
 
 int EthernetInterface::init()

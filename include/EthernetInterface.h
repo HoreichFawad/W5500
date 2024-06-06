@@ -21,7 +21,7 @@ public:
     * \param reset reset pin of the W5500
     */
     EthernetInterface(PinName mosi, PinName miso, PinName sclk, PinName cs, PinName reset);
-    // EthernetInterface(SPI* spi, PinName cs, PinName reset);
+    EthernetInterface(SPI* spi, PinName cs, PinName reset);
 
   /** Initialize the interface with DHCP w/o MAC address
   * Initialize the interface and configure it to use DHCP (no connection at this point).
