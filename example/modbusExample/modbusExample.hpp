@@ -1,5 +1,6 @@
 #pragma once
-
+#include <stdint.h>
+#include <stddef.h>
 int modbusExample();
 int modbus_write_register(uint16_t address, const uint16_t &value);
 void modbuserror_handle(const uint8_t *msg, int func);

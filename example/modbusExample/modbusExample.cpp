@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-// #include "modbus.h"
+// #include "modbusExample.hpp"
 #include "w5500example.hpp"
 #include "w5500_header.hpp"
 #include "testw5500.hpp"
@@ -57,7 +57,6 @@ bool _connected{};
 uint16_t PORT{};
 uint32_t _msg_id{};
 int _slaveid{};
-std::string HOST;
 
 // X_SOCKET _socket{};
 // SOCKADDR_IN _server{};
@@ -115,9 +114,12 @@ bool socketConfiguration()
     while(net.getSn_SR(0)!= W5500::SOCK_INIT);
     // buf=net.getSn_PORT(0);
     net.scmd(0, W5500::Command::CONNECT);
-    // printf("status register value= %d\n",net.getSn_SR(0));
+    printf("status register value= %d\n",net.getSn_SR(0));
+    // printf("trying to connect");
     while(!net.getSn_IR(0));
     printf("Connection established\n");
+    _connected=true;
+    return true;
 }
 
 void modbus_set_slave_id(int id)
@@ -127,7 +129,7 @@ void modbus_set_slave_id(int id)
 
 void modbus_build_request(uint8_t *to_send, uint16_t address, int func) 
 {
-    to_send[0] = (uint8_t)(_msg_id >> 8u);
+    to_send[0] = (uint8_t)(_msg_id>>8u);
     to_send[1] = (uint8_t)(_msg_id & 0x00FFu);
     to_send[2] = 0;
     to_send[3] = 0;
@@ -169,6 +171,7 @@ ssize_t modbus_send(uint8_t *to_send, size_t length)
         }
     }
     net.sreg<uint8_t>(0, Sn_IR, W5500::INT_SEND_OK);
+    return W5500::INT_SEND_OK;
 }
 
 int modbus_write(uint16_t address, uint16_t amount, int func, const uint16_t *value)
@@ -182,6 +185,7 @@ int modbus_write(uint16_t address, uint16_t amount, int func, const uint16_t *va
         to_send[5] = 6;
         to_send[10] = (uint8_t)(value[0] >> 8u);
         to_send[11] = (uint8_t)(value[0] & 0x00FFu);
+        printf("sending\n");
         status = modbus_send(to_send, 12);
     }
     else if (func == WRITE_REGS)
@@ -243,6 +247,13 @@ ssize_t modbus_receive(uint8_t* buf)
     net.spiRead(ptr, cntl_byte, buf, size);
     net.sreg<uint16_t>(0, Sn_RX_RD, ptr + size);
     net.scmd(0, W5500::RECV);
+    printf("receiving\n");
+    // int len=size;
+    // if (len > 0) {
+        // buf[len] = '\0'; // Null-terminate the received string
+    for(int i=0;i<12;i++)
+        printf("Received: %u\n", buf[i]);
+    return *buf;
 }
 
 void modbuserror_handle(const uint8_t *msg, int func)
@@ -288,6 +299,39 @@ void modbuserror_handle(const uint8_t *msg, int func)
     }
 }
 
+// int modbus_read_coils(uint16_t address, uint16_t amount, bool *buffer)
+// {
+//     if (_connected)
+//     {
+//         if (amount > 2040)
+//         {
+//             set_bad_input();
+//             return EX_BAD_DATA;
+//         }
+//         modbus_read(address, amount, READ_COILS);
+//         uint8_t to_rec[MAX_MSG_LENGTH];
+//         ssize_t k = modbus_receive(to_rec);
+//         if (k == -1)
+//         {
+//             set_bad_con();
+//             return BAD_CON;
+//         }
+//         modbuserror_handle(to_rec, READ_COILS);
+//         if (err)
+//             return err_no;
+//         for (auto i = 0; i < amount; i++)
+//         {
+//             buffer[i] = (bool)((to_rec[9u + i / 8u] >> (i % 8u)) & 1u);
+//         }
+//         return 0;
+//     }
+//     else
+//     {
+//         set_bad_con();
+//         return BAD_CON;
+//     }
+// }
+
 int modbus_write_register(uint16_t address, const uint16_t &value)
 {
         modbus_write(address, 1, WRITE_REG, &value);
@@ -305,10 +349,10 @@ int modbus_write_register(uint16_t address, const uint16_t &value)
 int modbusExample()
 {   
     init();
-    setConfigurations("192.168.13.165","255.255.255.0","192.168.11.1","192.168.13.165");
+    setConfigurations("192.168.13.164","255.255.255.0","192.168.11.1","192.168.13.165");
     socketConfiguration();
-    modbus_set_slave_id(1);
-    modbus_write_register(0, 123);
+    modbus_set_slave_id(3);
+    modbus_write_register(2,145);
     // create a modbus object
     // modbus mb = modbus("127.0.0.1", 502);
 
@@ -350,5 +394,5 @@ int modbusExample()
 
     // // close connection and free the memory
     // mb.modbus_close();
-    // return 0;
+    return 0;
 }
