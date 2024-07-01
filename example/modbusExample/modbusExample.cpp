@@ -6,36 +6,7 @@
 #include "EthernetInterface.h"
 #include "modbusExample.hpp"
 
-SPI spi(PB_15, PB_14, PB_13); // mosi, miso, sclk
-EthernetInterface net(&spi, PB_12, PA_10);
-
-uint32_t strToIP_(const char *str)
-{
-    uint32_t ip = 0;
-    char *p = (char *)str;
-    for (int i = 0; i < 4; i++)
-    {
-        ip |= atoi(p);
-        p = strchr(p, '.');
-        if (p == NULL)
-        {
-            break;
-        }
-        ip <<= 8;
-        p++;
-    }
-    return ip;
-}
-
-bool spiConfig()
-{
-    spi.format(8,0); // 8bit, mode 0
-    spi.frequency(1000000); // 1MHz
-    wait_us(1000*1000); // 1 second for stable state
-    return true;
-}
-
-ModbusTCPClient::ModbusTCPClient( const char* IP_Addrc, const char* IP_Subnetc, const char* IP_Gatewayc, const char* DIP_Addr,uint8_t* MAC_Addrc)
+ModbusTCPClient::ModbusTCPClient(W5500* w5500) : networkInterface(w5500)
 {
     _slaveid = 1;
     _msg_id = 1;
@@ -43,35 +14,14 @@ ModbusTCPClient::ModbusTCPClient( const char* IP_Addrc, const char* IP_Subnetc, 
     err = false;
     err_no = 0;
     error_msg = "";
-    uint32_t ip=strToIP_(IP_Addrc);
-    uint32_t subn=strToIP_(IP_Subnetc);
-    uint32_t gateway=strToIP_(IP_Gatewayc);
-    uint32_t dip=strToIP_(DIP_Addr);
-    net.reg_wr<uint32_t>(GAR, gateway);
-    net.reg_wr<uint32_t>(SUBR, subn);
-    for (int i = 0; i < 6; i++)
-    {
-        net.reg_wr<uint8_t>(SHAR + i, MAC_Addrc[i]);
-    }
-    net.reg_wr<uint32_t>(SIPR, ip);
-    net.sreg<uint8_t>(0, Sn_MR, Sn_MR_TCP);
-    net.sreg<uint16_t>(0, Sn_PORT, 502);
-    net.sreg<uint16_t>(0,Sn_DPORT, 502);
-    net.sreg<uint32_t>(0,Sn_DIPR, dip);
 }
 
-bool ModbusTCPClient::socketConfiguration()
+bool ModbusTCPClient::connect()
 {
-    net.scmd(0, W5500::Command::OPEN);
-    while(net.getSn_SR(0)!= W5500::SOCK_INIT);
-    // buf=net.getSn_PORT(0);
-    net.scmd(0, W5500::Command::CONNECT);
-    // printf("status register value= %d\n",net.getSn_SR(0));
-    printf("Connecting....\n");
-    while(!net.getSn_IR(0));
-    printf("Connection established\n");
-    _connected=true;
-    return true;
+    _connected = networkInterface->establishConnection();
+    if(_connected)
+        printf("Connection Established\n");
+    return _connected;
 }
 
 void ModbusTCPClient::modbusSetSlaveId(int id)
@@ -95,35 +45,7 @@ void ModbusTCPClient::modbusBuildRequest(uint8_t *to_send, uint16_t address, int
 ssize_t ModbusTCPClient::modbusSend(uint8_t *to_send, size_t length)
 {
     _msg_id++;
-    uint16_t ptr = net.sreg<uint16_t>(0, Sn_TX_WR);
-    uint8_t cntl_byte = (0x14 + (0 << 5));
-    net.spiWrite(ptr, cntl_byte, to_send, length);
-    net.sreg<uint16_t>(0, Sn_TX_WR, ptr + length);
-    net.scmd(0, W5500::SEND);
-    uint8_t tmp_Sn_IR;
-    while (((tmp_Sn_IR = net.sreg<uint8_t>(0, Sn_IR)) & W5500::INT_SEND_OK) != W5500::INT_SEND_OK)
-    {
-        // @Jul.10, 2014 fix contant name, and udp sendto function.
-        switch (net.sreg<uint8_t>(0, Sn_SR))
-        {
-        case W5500::SOCK_CLOSED:
-            net.close(0);
-            return 0;
-            // break;
-        case W5500::SOCK_UDP:
-            // ARP timeout is possible.
-            if ((tmp_Sn_IR & W5500::INT_TIMEOUT) == W5500::INT_TIMEOUT)
-            {
-                net.sreg<uint8_t>(0, Sn_IR, W5500::INT_TIMEOUT);
-                return 0;
-            }
-            break;
-        default:
-            break;
-        }
-    }
-    net.sreg<uint8_t>(0, Sn_IR, W5500::INT_SEND_OK);
-    return W5500::INT_SEND_OK;
+    return networkInterface->socket0Send(to_send,length);
 }
 
 int ModbusTCPClient::modbusWrite(uint16_t address, uint16_t amount, int func, const uint16_t *value)
@@ -137,7 +59,6 @@ int ModbusTCPClient::modbusWrite(uint16_t address, uint16_t amount, int func, co
         to_send[5] = 6;
         to_send[10] = (uint8_t)(value[0] >> 8u);
         to_send[11] = (uint8_t)(value[0] & 0x00FFu);
-        // printf("sending\n");
         status = modbusSend(to_send, 12);
     }
     else if (func == WRITE_REGS)
@@ -177,28 +98,7 @@ int ModbusTCPClient::modbusWrite(uint16_t address, uint16_t amount, int func, co
 
 ssize_t ModbusTCPClient::modbusReceive(uint8_t* buf) const
 {
-    uint8_t buffer=0;
-    do{
-        buffer=net.sreg<uint8_t>(0, Sn_IR);
-    }while(buffer!=5);
-    int size=0;
-    int size2=0;
-    do{
-        size = net.sreg<uint16_t>(0, Sn_RX_RSR);
-        size2 = net.sreg<uint16_t>(0, Sn_RX_RSR);
-    } while (size != size2);
-    uint16_t ptr = net.sreg<uint16_t>(0, Sn_RX_RD);
-    uint8_t cntl_byte = (0x18 + (0 << 5));
-    net.spiRead(ptr, cntl_byte, buf, size);
-    net.sreg<uint16_t>(0, Sn_RX_RD, ptr + size);
-    net.scmd(0, W5500::RECV);
-    // printf("receiving\n");
-    // // int len=size;
-    // // if (len > 0) {
-    //     // buf[len] = '\0'; // Null-terminate the received string
-    // // for(int i=0;i<12;i++)
-    //     printf("Received: %u\n", buf[i]);
-    return *buf;
+    return networkInterface->socket0Receive(buf);
 }
 
 void ModbusTCPClient::modbusErrorHandle(const uint8_t *msg, int func)
@@ -501,14 +401,19 @@ ModbusTCPClient::~ModbusTCPClient(){
 }
 int modbusExample()
 {   
-    spiConfig();
+    SPI spi(PB_15, PB_14, PB_13); // mosi, miso, sclk
+    W5500 w5500(&spi, PB_12, PA_10);
+    spi.format(8,0); // 8bit, mode 0
+    spi.frequency(1000000); // 1MHz
+    wait_us(1000*1000); // 1 second for stable state
     uint8_t MAC_Addrc[6] = {0x00,0x08,0xDC,0x12,0x34,0x56};
-    ModbusTCPClient modbus("192.168.13.164","255.255.255.0","192.168.11.1","192.168.13.165",&MAC_Addrc[0]);
-    modbus.socketConfiguration();
+    w5500.socket0ConfigModbus("192.168.13.164","255.255.255.0","192.168.11.1","192.168.13.165",&MAC_Addrc[0]);
+    ModbusTCPClient modbus(&w5500);
+    modbus.connect();
     modbus.modbusSetSlaveId(11);
 
     // // read coil                        function 0x01
-    // bool read_coil;
+    // // bool read_coil;
     // modbus.modbusReadCoils(1, 1, &read_coil);
 
     // // read input bits(discrete input)  function 0x02
@@ -527,17 +432,17 @@ int modbusExample()
     // modbus.modbusWriteCoil(0, true);
 
     // // write single reg                 function 0x06
-    modbus.modbusWriteRegister(0, 123);
+    // modbus.modbusWriteRegister(0, 123);
 
     // // write multiple coils             function 0x0F
-    // bool write_cols[4] = {false, true, false, true};
-    // modbus.modbusWriteCoils(0, 4, write_cols);
+    bool write_cols[4] = {false, true, false, true};
+    modbus.modbusWriteCoils(0, 4, write_cols);
 
     // // write multiple regs              function 0x10
     // uint16_t write_regs[4] = {21, 22, 23,24};
     // modbus.modbusWriteRegisters(4, 4, write_regs);
 
     // // close connection and free the memory
-    // net.close(0);
+    // networkInterface.close(0);
     return 0;
 }

@@ -190,6 +190,101 @@ void debugHex(uint8_t *buf, int len)
  * PUBLIC MEMBERS
  */
 
+bool W5500::socket0ConfigModbus(const char* IP_Addrc, const char* IP_Subnetc, const char* IP_Gatewayc, const char* DIP_Addr,uint8_t* MAC_Addrc)
+{
+    uint32_t ip=strToIp(IP_Addrc);
+    uint32_t subn=strToIp(IP_Subnetc);
+    uint32_t gateway=strToIp(IP_Gatewayc);
+    uint32_t dip=strToIp(DIP_Addr);
+    reg_wr<uint32_t>(GAR, gateway);
+    reg_wr<uint32_t>(SUBR, subn);
+    for (int i = 0; i < 6; i++)
+    {
+        reg_wr<uint8_t>(SHAR + i, MAC_Addrc[i]);
+    }
+    reg_wr<uint32_t>(SIPR, ip);
+    sreg<uint8_t>(0, Sn_MR, Sn_MR_TCP);
+    sreg<uint16_t>(0, Sn_PORT, 502);
+    sreg<uint16_t>(0,Sn_DPORT, 502);
+    sreg<uint32_t>(0,Sn_DIPR, dip);
+    return true;
+}
+
+bool W5500::establishConnection()
+{
+    scmd(0, W5500::Command::OPEN);
+    while(getSn_SR(0)!= W5500::SOCK_INIT);
+    // buf=net.getSn_PORT(0);
+    scmd(0, W5500::Command::CONNECT);
+    // printf("status register value= %d\n",net.getSn_SR(0));
+    // printf("Connecting....\n");
+    while(!getSn_IR(0));
+    // printf("Connection established\n");
+    return true;
+}
+
+uint16_t W5500::socket0Send(uint8_t *to_send, size_t length)
+{
+    uint16_t ptr = sreg<uint16_t>(0, Sn_TX_WR);
+    uint8_t cntl_byte = (0x14 + (0 << 5));
+    spiWrite(ptr, cntl_byte, to_send, length);
+    sreg<uint16_t>(0, Sn_TX_WR, ptr + length);
+    scmd(0, W5500::SEND);
+    uint8_t tmp_Sn_IR;
+    while (((tmp_Sn_IR = sreg<uint8_t>(0, Sn_IR)) & W5500::INT_SEND_OK) != W5500::INT_SEND_OK)
+    {
+        // @Jul.10, 2014 fix contant name, and udp sendto function.
+        switch (sreg<uint8_t>(0, Sn_SR))
+        {
+        case W5500::SOCK_CLOSED:
+            close(0);
+            return 0;
+            // break;
+        case W5500::SOCK_UDP:
+            // ARP timeout is possible.
+            if ((tmp_Sn_IR & W5500::INT_TIMEOUT) == W5500::INT_TIMEOUT)
+            {
+                sreg<uint8_t>(0, Sn_IR, W5500::INT_TIMEOUT);
+                return 0;
+            }
+            break;
+        default:
+            break;
+        }
+    }
+    sreg<uint8_t>(0, Sn_IR, W5500::INT_SEND_OK);
+
+    // net.send()
+
+    return W5500::INT_SEND_OK;
+}
+
+uint8_t W5500::socket0Receive(uint8_t* buf)
+{
+    uint8_t buffer=0;
+    do{
+        buffer=sreg<uint8_t>(0, Sn_IR);
+    }while(buffer!=5);
+    int size=0;
+    int size2=0;
+    do{
+        size = sreg<uint16_t>(0, Sn_RX_RSR);
+        size2 = sreg<uint16_t>(0, Sn_RX_RSR);
+    } while (size != size2);
+    uint16_t ptr = sreg<uint16_t>(0, Sn_RX_RD);
+    uint8_t cntl_byte = (0x18 + (0 << 5));
+    spiRead(ptr, cntl_byte, buf, size);
+    sreg<uint16_t>(0, Sn_RX_RD, ptr + size);
+    scmd(0, W5500::RECV);
+    // printf("receiving\n");
+    // // int len=size;
+    // // if (len > 0) {
+    //     // buf[len] = '\0'; // Null-terminate the received string
+    // for(int i=0;i<12;i++)
+    //     printf("Received: %u\n", buf[i]);
+    return *buf;
+}
+
 bool W5500::setMac()
 {
 
@@ -316,7 +411,7 @@ bool W5500::close(int socket)
     return true;
 }
 
-bool W5500::is_connected(int socket)
+bool W5500::isConnected(int socket)
 {
     uint8_t tmpSn_SR;
     tmpSn_SR = sreg<uint8_t>(socket, Sn_SR);

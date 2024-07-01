@@ -3,6 +3,8 @@
 #include <string>
 #include "mbed.h"
 #include "EthernetInterface.h"
+#include <any>
+#include <variant>
 
 #define MAX_MSG_LENGTH 260
 
@@ -38,7 +40,7 @@ class ModbusTCPClient
         int err_no{};
         std::string error_msg;
 
-        ModbusTCPClient(const char* IP_Addrc, const char* IP_Subnetc, const char* IP_Gatewayc, const char* DIP_Addr,uint8_t* MAC_Addrc);
+        ModbusTCPClient(W5500* w5500);
         ~ModbusTCPClient();
 
         void modbusSetSlaveId(int id);
@@ -52,16 +54,14 @@ class ModbusTCPClient
         int modbusWriteRegister(uint16_t address, const uint16_t &value);
         int modbusWriteCoils(uint16_t address, uint16_t amount, const bool *value);
         int modbusWriteRegisters(uint16_t address, uint16_t amount, const uint16_t *value);
-        bool socketConfiguration();
-        bool setConfigurations(const char* IP_Addrc, const char* IP_Subnetc, const char* IP_Gatewayc, const char* DIP_Addr);
-        bool init();
+        bool connect();
     private:
+        W5500* networkInterface;
         bool _connected{};
         uint16_t PORT{};
         uint32_t _msg_id{};
         int _slaveid{};
         std::string HOST;
-
         void modbusBuildRequest(uint8_t *to_send, uint16_t address, int func) const;
 
         int modbusRead(uint16_t address, uint16_t amount, int func);
