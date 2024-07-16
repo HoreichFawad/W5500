@@ -20,9 +20,9 @@ int serverExampleTCP()
     wait_us(1000*1000); // 1 second for stable state
     uint8_t buffer=0x80;
     net.spiWrite(MR,0x04,&buffer,1);
-    uint32_t ip=strToIP_(IP_Addrs);
-    uint32_t subn=strToIP_(IP_Subnets);
-    uint32_t gateway=strToIP_(IP_Gateways);
+    uint32_t ip=strToIp(IP_Addrs);
+    uint32_t subn=strToIp(IP_Subnets);
+    uint32_t gateway=strToIp(IP_Gateways);
     net.reg_wr<uint32_t>(GAR, gateway);
     net.reg_wr<uint32_t>(SUBR, subn);
     for (int i = 0; i < 6; i++)
