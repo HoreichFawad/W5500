@@ -269,6 +269,14 @@ W5500(SPI* spi, PinName cs, PinName reset);
 
     int waitWriteable(int socket, int wait_time_ms, int req_size = 0);
 
+    bool socket0ConfigModbus(const char* IP_Addrc, const char* IP_Subnetc, const char* IP_Gatewayc, const char* DIP_Addr,uint8_t* MAC_Addrc);
+
+    bool establishConnection();
+
+    uint16_t socket0Send(uint8_t *to_send, size_t length);
+
+    uint8_t socket0Receive(uint8_t* buf);
+
     /*
     * Check if a tcp link is active
     *
